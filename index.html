@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <title>D-day</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="titlebar">
+      <span class="title">D-day</span>
+      <div class="titlebar-actions">
+        <button id="btn-add" class="icon-btn" title="추가">+</button>
+        <button id="btn-settings" class="icon-btn" title="설정">⚙</button>
+        <button id="btn-hide" class="icon-btn" title="숨기기">×</button>
+      </div>
+    </header>
+
+    <main id="list" class="list"></main>
+
+    <!-- Add / edit modal -->
+    <div id="modal" class="overlay hidden">
+      <form id="dday-form" class="card">
+        <h2 id="form-title">D-day 추가</h2>
+        <label>
+          <span>라벨</span>
+          <input id="input-label" type="text" maxlength="30" placeholder="예: 수능" required />
+        </label>
+        <label>
+          <span>날짜</span>
+          <input id="input-date" type="date" required />
+        </label>
+        <input type="hidden" id="input-id" />
+        <div class="form-actions">
+          <button type="button" id="btn-delete" class="btn danger hidden">삭제</button>
+          <div class="spacer"></div>
+          <button type="button" id="btn-cancel" class="btn">취소</button>
+          <button type="submit" class="btn primary">저장</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Settings panel -->
+    <div id="settings" class="overlay hidden">
+      <div class="card">
+        <h2>설정</h2>
+        <label class="row">
+          <span>Windows 시작 시 자동 실행</span>
+          <input id="toggle-autolaunch" type="checkbox" />
+        </label>
+        <div class="form-actions">
+          <div class="spacer"></div>
+          <button type="button" id="btn-quit" class="btn danger">종료</button>
+          <button type="button" id="btn-settings-close" class="btn primary">닫기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

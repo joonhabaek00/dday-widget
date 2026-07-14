@@ -1,0 +1,15 @@
+{
+  "name": "dday-widget",
+  "version": "1.0.0",
+  "description": "A minimal always-on-top D-day countdown widget for Windows",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "icon": "node scripts/generate-icon.js"
+  },
+  "author": "joonh",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.0"
+  }
+}
