@@ -1,10 +1,10 @@
-// Generates assets/icon.png (a simple dark rounded square with a blue "D")
-// using only Node's built-in zlib — no native deps.
+// Generates PNG icons (a dark rounded square with a blue "D") using only
+// Node's built-in zlib — no native deps.
+//   assets/icon.png  (32px)  -> system tray
+//   build/icon.png   (256px) -> app icon (electron-builder converts to .ico)
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
-
-const SIZE = 32;
 
 // 5x7 bitmap font for the glyph "D".
 const GLYPH_D = [
@@ -17,9 +17,9 @@ const GLYPH_D = [
   '1110',
 ];
 
-function makePixels() {
+function makePixels(SIZE) {
   const px = new Uint8Array(SIZE * SIZE * 4); // RGBA
-  const radius = 6;
+  const radius = Math.round(SIZE * 0.19);
 
   const bg = [30, 33, 43]; // card-ish dark
   const fg = [91, 140, 255]; // accent blue
@@ -32,9 +32,10 @@ function makePixels() {
     return dx * dx + dy * dy > radius * radius;
   };
 
-  // Glyph placement (scaled x2 -> 8x14, centered).
-  const gW = GLYPH_D[0].length * 2;
-  const gH = GLYPH_D.length * 2;
+  // Glyph scaled to ~44% of the canvas height, centered.
+  const scale = Math.max(1, Math.round((SIZE * 0.44) / GLYPH_D.length));
+  const gW = GLYPH_D[0].length * scale;
+  const gH = GLYPH_D.length * scale;
   const gx0 = Math.floor((SIZE - gW) / 2);
   const gy0 = Math.floor((SIZE - gH) / 2);
 
@@ -42,14 +43,13 @@ function makePixels() {
     const lx = x - gx0;
     const ly = y - gy0;
     if (lx < 0 || ly < 0 || lx >= gW || ly >= gH) return false;
-    return GLYPH_D[Math.floor(ly / 2)][Math.floor(lx / 2)] === '1';
+    return GLYPH_D[Math.floor(ly / scale)][Math.floor(lx / scale)] === '1';
   };
 
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
       const i = (y * SIZE + x) * 4;
-      const transparent = inCorner(x, y);
-      if (transparent) {
+      if (inCorner(x, y)) {
         px[i + 3] = 0;
         continue;
       }
@@ -82,7 +82,7 @@ function chunk(type, data) {
   return Buffer.concat([len, typeBuf, data, crcBuf]);
 }
 
-function encodePng(pixels) {
+function encodePng(SIZE, pixels) {
   const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
   const ihdr = Buffer.alloc(13);
@@ -90,16 +90,13 @@ function encodePng(pixels) {
   ihdr.writeUInt32BE(SIZE, 4);
   ihdr[8] = 8; // bit depth
   ihdr[9] = 6; // color type RGBA
-  ihdr[10] = 0;
-  ihdr[11] = 0;
-  ihdr[12] = 0;
 
-  // Raw scanlines with filter byte 0.
-  const raw = Buffer.alloc(SIZE * (SIZE * 4 + 1));
+  const stride = SIZE * 4 + 1;
+  const raw = Buffer.alloc(SIZE * stride);
   for (let y = 0; y < SIZE; y++) {
-    raw[y * (SIZE * 4 + 1)] = 0;
+    raw[y * stride] = 0; // filter: none
     pixels.subarray(y * SIZE * 4, (y + 1) * SIZE * 4).forEach((v, idx) => {
-      raw[y * (SIZE * 4 + 1) + 1 + idx] = v;
+      raw[y * stride + 1 + idx] = v;
     });
   }
   const idat = zlib.deflateSync(raw);
@@ -112,8 +109,12 @@ function encodePng(pixels) {
   ]);
 }
 
-const outDir = path.join(__dirname, '..', 'assets');
-fs.mkdirSync(outDir, { recursive: true });
-const outPath = path.join(outDir, 'icon.png');
-fs.writeFileSync(outPath, encodePng(makePixels()));
-console.log('Wrote', outPath);
+function writeIcon(SIZE, relPath) {
+  const outPath = path.join(__dirname, '..', relPath);
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, encodePng(SIZE, makePixels(SIZE)));
+  console.log('Wrote', outPath);
+}
+
+writeIcon(32, path.join('assets', 'icon.png'));
+writeIcon(256, path.join('build', 'icon.png'));

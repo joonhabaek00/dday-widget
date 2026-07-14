@@ -5,8 +5,17 @@ const fs = require('fs');
 const DATA_PATH = path.join(app.getPath('userData'), 'data.json');
 const ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
 
+const MIN_OPACITY = 0.3; // keep the widget visible/clickable
+
 let win = null;
 let tray = null;
+
+// Clamp opacity to [MIN_OPACITY, 1]; fall back to 1 for invalid values.
+function clampOpacity(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(1, Math.max(MIN_OPACITY, n));
+}
 
 // ---------- data persistence ----------
 function readData() {
@@ -16,10 +25,11 @@ function readData() {
     return {
       ddays: Array.isArray(parsed.ddays) ? parsed.ddays : [],
       bounds: parsed.bounds || null,
+      opacity: clampOpacity(parsed.opacity),
       autoLaunchInitialized: !!parsed.autoLaunchInitialized,
     };
   } catch {
-    return { ddays: [], bounds: null, autoLaunchInitialized: false };
+    return { ddays: [], bounds: null, opacity: 1, autoLaunchInitialized: false };
   }
 }
 
@@ -71,6 +81,7 @@ function createWindow() {
   });
 
   win.loadFile('index.html');
+  win.setOpacity(clampOpacity(data.opacity));
   win.once('ready-to-show', () => win.show());
 
   // Persist window position/size (debounced).
@@ -126,6 +137,17 @@ ipcMain.handle('save-ddays', (_e, ddays) => {
   current.ddays = Array.isArray(ddays) ? ddays : [];
   writeData(current);
   return true;
+});
+
+ipcMain.handle('get-opacity', () => readData().opacity);
+
+ipcMain.handle('set-opacity', (_e, value) => {
+  const opacity = clampOpacity(value);
+  if (win) win.setOpacity(opacity);
+  const current = readData();
+  current.opacity = opacity;
+  writeData(current);
+  return opacity;
 });
 
 ipcMain.handle('get-auto-launch', () => getAutoLaunch());

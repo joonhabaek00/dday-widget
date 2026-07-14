@@ -8,6 +8,8 @@ const inputDate = document.getElementById('input-date');
 const inputId = document.getElementById('input-id');
 const btnDelete = document.getElementById('btn-delete');
 const toggleAutolaunch = document.getElementById('toggle-autolaunch');
+const rangeOpacity = document.getElementById('range-opacity');
+const opacityValue = document.getElementById('opacity-value');
 
 let ddays = [];
 
@@ -161,6 +163,10 @@ document.getElementById('btn-add').addEventListener('click', () => openForm(null
 // ---------- settings ----------
 async function openSettings() {
   toggleAutolaunch.checked = await window.api.getAutoLaunch();
+  const opacity = await window.api.getOpacity();
+  const pct = Math.round(opacity * 100);
+  rangeOpacity.value = pct;
+  opacityValue.textContent = `${pct}%`;
   settingsEl.classList.remove('hidden');
 }
 
@@ -171,6 +177,18 @@ document.getElementById('btn-settings-close').addEventListener('click', () => {
 toggleAutolaunch.addEventListener('change', async () => {
   const result = await window.api.setAutoLaunch(toggleAutolaunch.checked);
   toggleAutolaunch.checked = result;
+});
+
+rangeOpacity.addEventListener('input', async () => {
+  const pct = Number(rangeOpacity.value);
+  opacityValue.textContent = `${pct}%`;
+  const applied = await window.api.setOpacity(pct / 100);
+  // Reflect any clamping done by the main process.
+  const appliedPct = Math.round(applied * 100);
+  if (appliedPct !== pct) {
+    rangeOpacity.value = appliedPct;
+    opacityValue.textContent = `${appliedPct}%`;
+  }
 });
 
 document.getElementById('btn-hide').addEventListener('click', () => window.api.hideWindow());
